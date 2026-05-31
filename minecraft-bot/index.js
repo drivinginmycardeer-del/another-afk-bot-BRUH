@@ -10,6 +10,12 @@ const RECONNECT_DELAY_MS = 10_000;
 
 let reconnectTimer = null;
 
+let botConnected = false;
+let botAuthenticated = false;
+const startTime = Date.now();
+let lastConnectTime = null;
+let restartCount = 0;
+
 function createBot() {
   console.log(`[Bot] Connecting to ${HOST}:${PORT} as ${USERNAME}...`);
 
@@ -26,6 +32,7 @@ function createBot() {
 
   function startAntiAfk() {
     if (afkIntervals.length > 0) return;
+    botAuthenticated = true;
 
     afkIntervals.push(setInterval(() => {
       try {
@@ -53,6 +60,7 @@ function createBot() {
   }
 
   function clearAntiAfk() {
+    botAuthenticated = false;
     afkIntervals.forEach(id => clearInterval(id));
     afkIntervals = [];
   }
@@ -70,6 +78,8 @@ function createBot() {
   }
 
   bot.once("spawn", () => {
+    botConnected = true;
+    lastConnectTime = new Date().toISOString();
     console.log("[Bot] Spawned. Attempting login...");
     setTimeout(tryLogin, 1500);
   });
@@ -99,6 +109,7 @@ function createBot() {
   });
 
   bot.on("kicked", (reason) => {
+    botConnected = false;
     clearAntiAfk();
     authenticated = false;
     console.log("[Bot] Kicked:", reason, "- Reconnecting...");
@@ -106,6 +117,7 @@ function createBot() {
   });
 
   bot.on("error", (err) => {
+    botConnected = false;
     clearAntiAfk();
     authenticated = false;
     console.log("[Bot] Error:", err.message, "- Reconnecting...");
@@ -113,6 +125,7 @@ function createBot() {
   });
 
   bot.on("end", (reason) => {
+    botConnected = false;
     clearAntiAfk();
     authenticated = false;
     console.log("[Bot] Disconnected:", reason, "- Reconnecting...");
@@ -122,6 +135,7 @@ function createBot() {
 
 function scheduleReconnect() {
   if (reconnectTimer) return;
+  restartCount++;
   reconnectTimer = setTimeout(() => {
     reconnectTimer = null;
     createBot();
@@ -133,6 +147,17 @@ const WEB_PORT = process.env.PORT || 3000;
 
 app.get("/", (req, res) => {
   res.send("Minecraft bot is running!");
+});
+
+app.get("/status", (req, res) => {
+  res.json({
+    connected: botConnected,
+    authenticated: botAuthenticated,
+    uptime: Date.now() - startTime,
+    lastConnectTime: lastConnectTime,
+    restartCount: restartCount,
+    timestamp: new Date().toISOString(),
+  });
 });
 
 app.listen(WEB_PORT, () => {
