@@ -1,9 +1,9 @@
 const mineflayer = require("mineflayer");
 const express = require("express");
 
-const HOST = "EymenBingos.aternos.me";
-const PORT = 33318;
-const USERNAME = "Venygun";
+const HOST = "PowderedSMP.aternos.me";
+const PORT = 21141;
+const USERNAME = "ILoveAternos32";
 const VERSION = "1.21.1";
 const PASSWORD = "replit123";
 const RECONNECT_DELAY_MS = 10_000;
